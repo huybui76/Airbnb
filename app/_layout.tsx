@@ -6,8 +6,11 @@ import { useEffect } from 'react';
 import { AntDesign } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import * as SecureStore from "expo-secure-store";
+import { ClerkProvider, SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
 
-const CLERK_PUBLISHABLE_KEY = process.env.CLERK_PUBLISHABLE_KEY
+
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+
 
 const tokenCache = {
   async getToken(key: string) {
@@ -63,16 +66,32 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+
+    <ClerkProvider
+      tokenCache={tokenCache}
+      publishableKey={CLERK_PUBLISHABLE_KEY!}
+    >
+
+      <RootLayoutNav />
+    </ClerkProvider>
+  )
 }
 
 function RootLayoutNav() {
   const router = useRouter()
+  const { isLoaded, isSignedIn } = useAuth();
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/(modals)/login')
+    }
+  }, [isLoaded])
   return (
     <Stack>
 
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name='(modals)/login' options={{
+        title: 'Login or Sign Up',
         presentation: 'modal',
         headerTitleStyle: {
           fontFamily: 'mon-sb',
@@ -80,7 +99,7 @@ function RootLayoutNav() {
         },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
-            <AntDesign name="close" size={24} color="black" />
+            <AntDesign name="close" size={24} color="black" style={{ marginRight: 15 }} />
           </TouchableOpacity>
         )
 
